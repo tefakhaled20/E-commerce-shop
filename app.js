@@ -51,12 +51,12 @@ app.use( '/admin', adminRoutes)
 app.use(errorHandlerMiddleware);
 
 db.connectToDatabase()
-  .then(function () {
+  .then(() => {
     app.listen(3000);
   })
-  .catch(function (error) {
+  .catch((error) => {
     console.log('Failed to connect to the database!');
     console.log(error);
-  });
+  }); 
 
 module.exports = app;

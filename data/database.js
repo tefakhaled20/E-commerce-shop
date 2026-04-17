@@ -1,27 +1,35 @@
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = `mongodb+srv://${process.env.DBUsername}:${process.env.DBPassword}@cluster0.cinusqz.mongodb.net/?appName=Cluster0`;
+const mongodb = require('mongodb');
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
+const MongoClient = mongodb.MongoClient;
+let database;
 
-async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
+function getMongoUri() {
+  if (process.env.MONGODB_URI) {
+    return process.env.MONGODB_URI;
   }
+
+  if (process.env.DBUsername && process.env.DBPassword) {
+    return `mongodb+srv://${process.env.DBUsername}:${process.env.DBPassword}@cluster0.cinusqz.mongodb.net/?appName=Cluster0`;
+  }
+
+  return 'mongodb://127.0.0.1:27017';
 }
-run().catch(console.dir);
-module.exports = client;
+
+async function connectToDatabase() {
+  const client = await MongoClient.connect(getMongoUri());
+  database = client.db(process.env.MONGODB_DB_NAME || 'online-shop');
+}
+
+function getDb() {
+  if (!database) {
+    throw new Error('Database connection not established.');
+  }
+
+  return database;
+}
+
+module.exports = {
+  connectToDatabase: connectToDatabase,
+  getDb: getDb
+};
