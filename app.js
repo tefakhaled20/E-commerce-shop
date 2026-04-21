@@ -52,7 +52,9 @@ app.use(errorHandlerMiddleware);
 
 db.connectToDatabase()
   .then(() => {
-    app.listen(3000);
+    // Replace the existing line 55: app.listen(3000) with the following line
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT);
   })
   .catch((error) => {
     console.log('Failed to connect to the database!');
