@@ -1,7 +1,5 @@
 const mongodb = require('mongodb');
-
 const db = require('../data/database');
-
 
 class Product {
   constructor(productData) {
@@ -9,13 +7,12 @@ class Product {
     this.summary = productData.summary;
     this.price = +productData.price;
     this.description = productData.description;
-    this.image = productData.image; // the name of the image file
-    this.updateImageData()
+    this.image = productData.image;
+    this.updateImageData();
     if (productData._id) {
       this.id = productData._id.toString();
     }
   }
-
 
   static async findById(productId) {
     let prodId;
@@ -25,6 +22,7 @@ class Product {
       error.code = 404;
       throw error;
     }
+    await db.connectToDatabase(); 
     const product = await db
       .getDb()
       .collection('products')
@@ -35,41 +33,33 @@ class Product {
       error.code = 404;
       throw error;
     }
-
     return new Product(product);
   }
 
-  static async findAll(){
-   const products =  await db.getDb().collection('products').find().toArray()
-   return products.map(function(productDocument){
-    return new Product(productDocument)
-   });
+  static async findAll() {
+    await db.connectToDatabase(); 
+    const products = await db.getDb().collection('products').find().toArray();
+    return products.map((productDocument) => new Product(productDocument));
   }
 
-
   static async findMultiple(ids) {
-    const productIds = ids.map(function(id) {
-      return new mongodb.ObjectId(id);
-    })
-    
+    const productIds = ids.map((id) => new mongodb.ObjectId(id));
+    await db.connectToDatabase(); 
     const products = await db
       .getDb()
       .collection('products')
       .find({ _id: { $in: productIds } })
       .toArray();
-
-    return products.map(function (productDocument) {
-      return new Product(productDocument);
-    });
+    return products.map((productDocument) => new Product(productDocument));
   }
 
   updateImageData() {
     this.imagePath = `product-data/images/${this.image}`;
-     if (this.image && (this.image.startsWith('http://') || this.image.startsWith('https://'))) {
+    if (this.image && (this.image.startsWith('http://') || this.image.startsWith('https://'))) {
       this.imageUrl = this.image;
     } else {
-      const supabaseUrl = process.env.SUPABASE_URL.includes('.storage.') 
-        ? `https://${new URL(process.env.SUPABASE_URL).hostname.split('.')[0]}.supabase.co` 
+      const supabaseUrl = process.env.SUPABASE_URL.includes('.storage.')
+        ? `https://${new URL(process.env.SUPABASE_URL).hostname.split('.')[0]}.supabase.co`
         : process.env.SUPABASE_URL;
       const bucketName = encodeURIComponent(process.env.SUPABASE_BUCKET);
       const fileName = encodeURIComponent(this.image);
@@ -85,19 +75,15 @@ class Product {
       description: this.description,
       image: this.image,
     };
-
+    await db.connectToDatabase(); 
     if (this.id) {
       const productId = new mongodb.ObjectId(this.id);
-
       if (!this.image) {
         delete productData.image;
       }
-
       await db.getDb().collection('products').updateOne(
         { _id: productId },
-        {
-          $set: productData,
-        }
+        { $set: productData }
       );
     } else {
       await db.getDb().collection('products').insertOne(productData);
@@ -109,10 +95,11 @@ class Product {
     this.updateImageData();
   }
 
-  remove() {
+  async remove() {
+    await db.connectToDatabase(); 
     const productId = new mongodb.ObjectId(this.id);
     return db.getDb().collection('products').deleteOne({ _id: productId });
   }
 }
 
-module.exports = Product;   
+module.exports = Product;
