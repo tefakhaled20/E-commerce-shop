@@ -65,7 +65,16 @@ class Product {
 
   updateImageData() {
     this.imagePath = `product-data/images/${this.image}`;
-    this.imageUrl = `/products/assets/images/${this.image}`;
+     if (this.image && (this.image.startsWith('http://') || this.image.startsWith('https://'))) {
+      this.imageUrl = this.image;
+    } else {
+      const supabaseUrl = process.env.SUPABASE_URL.includes('.storage.') 
+        ? `https://${new URL(process.env.SUPABASE_URL).hostname.split('.')[0]}.supabase.co` 
+        : process.env.SUPABASE_URL;
+      const bucketName = encodeURIComponent(process.env.SUPABASE_BUCKET);
+      const fileName = encodeURIComponent(this.image);
+      this.imageUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${fileName}`;
+    }
   }
 
   async save() {
