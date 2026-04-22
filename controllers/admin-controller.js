@@ -1,5 +1,7 @@
 const Product = require('../models/product.model');
 const Order = require('../models/order.model');
+const supabase = require('../config/supabase');
+const uuid = require('uuid').v4;
 
 async function getProducts(req, res, next) {
   try {
@@ -16,9 +18,22 @@ function getNewProduct(req, res) {
 }
 
 async function createNewProduct(req, res, next) {
+   let filename = '';
+  if (req.file) {
+    filename = uuid() + '-' + req.file.originalname;
+    const { data, error } = await supabase.storage
+      .from(process.env.SUPABASE_BUCKET)
+      .upload(filename, req.file.buffer, {
+        contentType: req.file.mimetype,
+      });
+      
+    if (error) {
+      return next(error);
+    }
+  }
   const product = new Product({
     ...req.body,
-    image: req.file.filename,
+    image: filename,
   });
 
   try {
@@ -47,7 +62,17 @@ async function updateProduct(req, res, next) {
   });
 
   if (req.file) {
-    product.replaceImage(req.file.filename);
+   const filename = uuid() + '-' + req.file.originalname;
+    const { data, error } = await supabase.storage
+      .from(process.env.SUPABASE_BUCKET)
+      .upload(filename, req.file.buffer, {
+        contentType: req.file.mimetype,
+      });
+      
+    if (error) {
+      return next(error);
+    }
+    product.replaceImage(filename);
   }
 
   try {
